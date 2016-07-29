@@ -7,6 +7,10 @@ import (
 	"strings"
 	"html/template"
 	"regexp"
+	"time"
+	"crypto/md5"
+	"io"
+	"strconv"
 )
 
 func sayHello(res http.ResponseWriter,req *http.Request){
@@ -27,15 +31,26 @@ func sayHello(res http.ResponseWriter,req *http.Request){
 func login(res http.ResponseWriter,req *http.Request) {
 	fmt.Println("method:",req.Method)
 	if req.Method=="GET" {
+		curtime:=time.Now().Unix()
+		h:=md5.New()
+		io.WriteString(h,strconv.FormatInt(curtime,10))
+		token:=fmt.Sprintf("%x",h.Sum(nil))
+		fmt.Println(token)
+
 		t,_:=template.ParseFiles("front/src/templates/login.gtpl")
-		res.Header().Set("Content-Type", "text/html; charset=utf-8")
-		t.Execute(res,nil)
+		t.Execute(res,token)
 	}else {
 		req.ParseForm()//显式调用解析表单数据
 		fmt.Println("username:",req.Form["username"])
 		fmt.Println("password:",req.Form["password"])
+		//token校验,防止重复提交
+		token:=req.Form.Get("token")
+		if token!="" {
+			//do some token check
+		}else {
+			//token is empty,return an error
+		}
 		//验证表单输入
-		//非空
 		if len(req.Form["username"][0])==0{
 			fmt.Fprint(res,"username must be input")
 		}
